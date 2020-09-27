@@ -1,4 +1,5 @@
 import asyncio
+import docker
 import json
 import logging
 import os
@@ -24,19 +25,50 @@ configs_path = os.environ.get('JUPYTERHUB_CONFIG_PATH', '/srv/jupyterhub')
 
 Path(configs_path).mkdir(exist_ok=True, parents=True)
 
-
 JSON_FILE_PATH = configs_path + '/jupyterhub_config.json'
 
 cache = {'services': [], 'load_groups': {}}
 
-with Path(JSON_FILE_PATH).open('w+') as config:
+
+def initialize_service_definition_file(service_definitions: dict):
+    with Path(JSON_FILE_PATH).open('w+') as current_services:
+        json.dump(service_definitions, current_services)
+        logger.debug('Service definitions file initialized.')
+
+
+def is_grader_service_running(grader_name: str) -> bool:
+    docker_client = docker.from_env()
     try:
-        cache = json.load(config)
-    except json.JSONDecodeError:
-        if Path(JSON_FILE_PATH).stat().st_size != 0:
-            raise
-        else:
-            json.dump(cache, config)
+        container = docker_client.containers.get(grader_name)
+        return True if container.status == 'running' else False
+    except docker.errors.NotFound:
+        return False
+
+
+def validate_services_running(service_definitions: list) -> None:
+    for service in service_definitions['services']:
+        if not is_grader_service_running(f"grader-{service['name']}"):
+            # remove it from the cache/file ? or maybe start de container?
+            logger.info(
+                f"Detected a service definition {service['name']} in the file that is not running as a container"
+            )
+
+
+# if the service definition control file does not exist then create it
+if not Path(JSON_FILE_PATH).exists() or Path(JSON_FILE_PATH).stat().st_size == 0:
+    initialize_service_definition_file(cache)
+else:
+    with Path(JSON_FILE_PATH).open('r') as file:
+        try:
+            cache = json.load(file)
+            logger.debug(f'Service definition file found and loaded from: {JSON_FILE_PATH}')
+            logger.info(f'Service definition file content: {cache}')
+        except json.JSONDecodeError as e:
+            logger.error(f'Error reading the service definition file: {e}. This file will be initialized...')
+            initialize_service_definition_file(cache)
+
+    # check for each service if there is a container grader service in running state and remove it if not
+    validate_services_running()
 
 
 @app.route("/", methods=['POST'])
