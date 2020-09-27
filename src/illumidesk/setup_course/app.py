@@ -68,7 +68,7 @@ else:
             initialize_service_definition_file(cache)
 
     # check for each service if there is a container grader service in running state and remove it if not
-    validate_services_running()
+    validate_services_running(cache)
 
 
 @app.route("/", methods=['POST'])
