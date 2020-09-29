@@ -8,8 +8,6 @@ from illumidesk.grades.senders import LTIGradeSender
 
 from jupyterhub.handlers import BaseHandler
 
-from tornado import web
-
 
 class SendGradesHandler(BaseHandler):
     """
@@ -36,7 +34,7 @@ class SendGradesHandler(BaseHandler):
         self.log.debug(f'Data received to send grades-> course:{course_id}, assignment:{assignment_name}')
 
         lti_grade_sender = None
-
+        error_message = ''
         # check lti version by the authenticator setting
         if isinstance(self.authenticator, LTI11Authenticator) or self.authenticator is LTI11Authenticator:
             lti_grade_sender = LTIGradeSender(course_id, assignment_name)
@@ -45,10 +43,10 @@ class SendGradesHandler(BaseHandler):
         try:
             await lti_grade_sender.send_grades()
         except exceptions.GradesSenderCriticalError:
-            raise web.HTTPError(400, 'There was an critical error, please check logs.')
+            error_message = 'There was an critical error, please check logs.'
         except exceptions.AssignmentWithoutGradesError:
-            raise web.HTTPError(400, 'There are no grades yet to submit')
+            error_message = 'There are no grades yet to submit.'
         except exceptions.GradesSenderMissingInfoError as e:
-            self.log.error(f'There are missing values.{e}')
-            raise web.HTTPError(400, f'Impossible to send grades. There are missing values, please check logs.{e}')
-        self.write(json.dumps({"success": True}))
+            error_message = f'Impossible to send grades because some values are missing.{e}'
+            self.log.error(error_message)
+        self.write(json.dumps({'success': False if error_message else True, 'error': error_message}))

@@ -74,8 +74,9 @@ class GradesBaseSender:
                 submissions = gb.assignment_submissions(self.assignment_name)
                 logger.info(f'Found {len(submissions)} submissions for assignment: {self.assignment_name}')
             except MissingEntry as e:
-                logger.info('Assignment or Submission is missing in database: %s' % e)
-                raise GradesSenderMissingInfoError
+                err = 'Assignment or Submission is missing in the database'
+                logger.info(f'{err}. {e}')
+                raise GradesSenderMissingInfoError(err)
 
             for submission in submissions:
                 # retrieve the student to use the lms id
@@ -106,10 +107,9 @@ class LTIGradeSender(GradesBaseSender):
         grades_sender_file = LTIGradesSenderControlFile(self.gradebook_dir)
         assignment_info = grades_sender_file.get_assignment_by_name(self.assignment_name)
         if not assignment_info:
-            logger.warning(
-                f'There is not info related to assignment: {self.assignment_name}. Check if the config file path is correct'
-            )
-            raise GradesSenderMissingInfoError
+            err = f'There is not info related to assignment: {self.assignment_name}. Check if the config file path is correct'
+            logger.warning(err)
+            raise GradesSenderMissingInfoError(err)
 
         url = assignment_info['lis_outcome_service_url']
         # for each grade in nbgrader db, use the info saved in control file to process each student submission
