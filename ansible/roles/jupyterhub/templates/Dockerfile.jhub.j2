@@ -36,6 +36,7 @@ RUN python3 -m pip install --no-cache /tmp/illumidesk.zip
 # Copy logo and favicon
 COPY illumidesk-80.png /usr/local/share/jupyterhub/static/images/illumidesk-80.png
 COPY favicon.ico /usr/local/share/jupyterhub/static/favicon.ico
+COPY components/ /usr/local/share/jupyterhub/static/components/
 
 # Copy templates
 COPY share/templates/. /usr/local/share/jupyterhub/templates/.

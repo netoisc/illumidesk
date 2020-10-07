@@ -38,6 +38,7 @@
     <script src="{{static_url("components/requirejs/require.js") }}" type="text/javascript" charset="utf-8"></script>
     <script src="{{static_url("components/jquery/dist/jquery.min.js") }}" type="text/javascript" charset="utf-8"></script>
     <script src="{{static_url("components/bootstrap/dist/js/bootstrap.min.js") }}" type="text/javascript" charset="utf-8"></script>
+  
     {% endblock %}
     <script>
       require.config({
@@ -48,6 +49,7 @@
           paths: {
             components: '../components',
             jquery: '../components/jquery/dist/jquery.min',
+            'jquery-ui': '../components/jquery-ui/jquery-ui',
             bootstrap: '../components/bootstrap/dist/js/bootstrap.min',
             moment: "../components/moment/moment",
           },
@@ -55,6 +57,10 @@
             bootstrap: {
               deps: ["jquery"],
               exports: "bootstrap"
+            },
+            "jquery-ui": {
+              deps: ["jquery"],
+              exports: "$"
             },
           }
       });
@@ -121,14 +127,8 @@
             <li><a href="{{base_url}}admin">Admin</a></li>
             {% endif %}
             {% if services %}
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Grader Notebooks<span class="caret"></span></a>
-              <ul class="dropdown-menu">
-              {% for service in services if service.name != 'announcement'%}
-                <li><a class="dropdown-item" href="{{service.prefix}}">{{service.name}}</a></li>
-              {% endfor %}
-              </ul>
-            </li>
+            <label for="grader-notebooks-autocomplete">Grader Notebooks:</label>
+            <input type="text" id="grader-notebooks" class="form-control" placeholder="Select..." aria-label="Grade notebook">
             {% endif %}
           {% endblock %}
         </ul>
@@ -190,7 +190,7 @@
 
 {% block script %}
 {% endblock %}
-<script>  
+<script>
   let annuncement_url = `${window.jhdata.prefix}services/announcement`;
   $.get(annuncement_url, function(data) {
       let msg = data["announcement"];
@@ -203,6 +203,20 @@
       }
       
   });
+</script>
+<script>
+  var grader_notebook_services = [];
+  require(['jquery', 'jquery-ui'], function($){
+    
+    {% for service in services if service.name != 'announcement' %}
+    grader_notebook_services.push({'name': '{{service.name}}', 'url': '{{service.prefix}}' });
+    {% endfor %}
+    // set autocomplete with grader notebook list
+    $("#grader-notebooks").autocomplete({
+      source: grader_notebook_services.map(g => g['name'])
+    });
+  });
+  
 </script>
 
 </body>

@@ -94,6 +94,11 @@
     src: share/static/images/illumidesk-80.png
     dest: "{{ working_dir }}/illumidesk-80.png"
 
+- name: copy js components
+  copy:
+    src: share/static/components
+    dest: "{{ working_dir }}/"
+
 - name: copy jupyterhub template files
   copy:
     src: share/templates
